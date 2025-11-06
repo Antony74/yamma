@@ -21,10 +21,10 @@
 		"testcov": "jest --coverage --collectCoverageFrom=\"src/**\""
 	},
 	"devDependencies": {
-		"@types/jest": "^27.4.1",
+		"@types/jest": "^30.0.0",
 		"@types/nearley": "^2.11.2",
-		"jest": "^27.5.1",
-		"ts-jest": "^27.1.3",
-		"typescript": "^4.9.4"
+		"jest": "^30.2.0",
+		"ts-jest": "^29.4.5",
+		"typescript": "^5.9.3"
 	}
 }
