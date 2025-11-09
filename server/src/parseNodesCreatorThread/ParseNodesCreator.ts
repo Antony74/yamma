@@ -10,16 +10,61 @@ import { WorkingVars } from '../mmp/WorkingVars';
 import { GrammarManagerForThread, IMmpRuleForThread } from './GrammarManagerForThread';
 import { ParseNodeForThread, ParseNodeForThreadConverter } from './ParseNodeForThread';
 
+type MessageProgress = {
+	kind: 'progress',
+	index: number,
+	count: number,
+}
+
+type MessageLog = {
+	kind: 'log',
+	text: string,
+}
+
+type MessageDone = {
+	kind: 'done',
+	labelToParseNodeForThreadMap: Map<string, ParseNodeForThread>,
+}
+
+type Message = MessageDone | MessageProgress | MessageLog;
+
+export type ProgressCallback = (message: MessageProgress | MessageLog) => void;
+
+export const postProgress = (index: number, count: number) => {
+	const message: MessageProgress = {kind: 'progress', index, count};
+	parentPort?.postMessage(message);
+};
+
+export const postLog = (text: string) => {
+	const message: MessageLog = {kind: 'log', text};
+	parentPort?.postMessage(message);
+};
+
+export const postDone = (labelToParseNodeForThreadMap: Map<string, ParseNodeForThread>) => {
+	const message: MessageDone = {kind: 'done', labelToParseNodeForThreadMap};
+	parentPort?.postMessage(message);
+};
+
+export const defaultProgressCallback: ProgressCallback = (message) => {
+	switch(message.kind) {
+		case 'progress':
+			notifyProgress(message.index, message.count);
+			break;
+		case 'log':
+			console.log(message.text);
+			break;
+	}
+};
 
 //#region CHILD THREAD
 if (!isMainThread) {
 	const { labelToFormulaMap, mmpRulesForThread }: { labelToFormulaMap: Map<string, string>, mmpRulesForThread: IMmpRuleForThread[] } = workerData;
 
-	console.log('I am the worker thread!!!!!!!!!');
-	console.log('Worker thread!!!!: labelToFormulaMap.size = ' + labelToFormulaMap.size);
+	postLog('I am the worker thread!!!!!!!!!');
+	postLog('Worker thread!!!!: labelToFormulaMap.size = ' + labelToFormulaMap.size);
 	const labelToParseNodeForThreadMap: Map<string, ParseNodeForThread> =
 		createLabelToParseNodeForThreadMap(labelToFormulaMap, mmpRulesForThread);
-	parentPort!.postMessage(labelToParseNodeForThreadMap);
+	postDone(labelToParseNodeForThreadMap);
 }
 
 //#region createLabelToParseNodeForThreadMap
@@ -62,7 +107,7 @@ export function createLabelToParseNodeForThreadMap(labelToFormulaMap: Map<string
 	const formulaToParseNodeForThreadCache: Map<string, ParseNodeForThread> = new Map<string, ParseNodeForThread>();
 	let i = 0;
 	labelToFormulaMap.forEach((formula: string, label: string) => {
-		notifyProgress(i++, labelToFormulaMap.size, "createLabelToParseNodeForThreadMap");
+		postProgress(i++, labelToFormulaMap.size);
 		// comment out the following line to avoid caching
 		const parseNodeForThread: ParseNodeForThread | undefined = getParseNodeForThread(
 			formula, grammar, workingVars, formulaToParseNodeForThreadCache);
@@ -72,8 +117,8 @@ export function createLabelToParseNodeForThreadMap(labelToFormulaMap: Map<string
 		if (parseNodeForThread != undefined)
 			labelToParseNodeForThreadMap.set(label, parseNodeForThread);
 	});
-	console.log('labelToParseNodeForThreadMap.size = ' + labelToParseNodeForThreadMap.size);
-	console.log('formulaToParseNodeForThreadCache.size = ' + formulaToParseNodeForThreadCache.size);
+	postLog('labelToParseNodeForThreadMap.size = ' + labelToParseNodeForThreadMap.size);
+	postLog('formulaToParseNodeForThreadCache.size = ' + formulaToParseNodeForThreadCache.size);
 	return labelToParseNodeForThreadMap;
 }
 //#endregion createLabelToParseNodeForThreadMap
@@ -107,13 +152,16 @@ export function addParseNodes(labelToParseNodeForThreadMap: Map<string, ParseNod
 	});
 }
 
-export function creaParseNodesInANewThread(mmParser: MmParser): void {
+export function creaParseNodesInANewThread(mmParser: MmParser, callback: ProgressCallback ): Promise<void> {
 	// This code is executed in the main thread and not in the worker.
 	const labelToFormulaMap: Map<string, string> = createLabelToFormulaMap(mmParser);
 	const mmpRulesForThread: IMmpRuleForThread[] =
 		GrammarManagerForThread.convertMmpRules(<MmpRule[]>mmParser.grammar.rules);
 
-	console.log('I am the Main thread!!!!!!!: labelToFormulaMap.size = ' + labelToFormulaMap.size);
+	callback({
+		kind: 'log',
+		text: 'I am the Main thread!!!!!!!: labelToFormulaMap.size = ' + labelToFormulaMap.size
+	} satisfies MessageLog);
 
 	// Create the worker.
 	const workerFileName: string = __filename.replace('src', 'out').replace('.ts', '.js');
@@ -121,11 +169,19 @@ export function creaParseNodesInANewThread(mmParser: MmParser): void {
 	// let workerData: any = { parseNode: labelToStatementMap };
 	const workerData = { labelToFormulaMap: labelToFormulaMap, mmpRulesForThread: mmpRulesForThread };
 	const worker = new Worker(workerFileName, { workerData: workerData });
-	// Listen for messages from the worker and print them.
-	worker.on('message', (labelToParseNodeForThreadMap: Map<string, ParseNodeForThread>) => {
-		console.log('I am back to the Main thread!!!!!!!');
-		addParseNodes(labelToParseNodeForThreadMap, mmParser.labelToStatementMap);
-		mmParser.areAllParseNodesComplete = true;
+
+	return new Promise<void>(resolve => {
+		// Listen for messages from the worker and print them.
+		worker.on('message', (message: Message) => {
+			if (message.kind === 'done') {
+				callback({kind: 'log', text: ('I am back to the Main thread!!!!!!!')} satisfies MessageLog);
+				addParseNodes(message.labelToParseNodeForThreadMap, mmParser.labelToStatementMap);
+				resolve();
+			mmParser.areAllParseNodesComplete = true;
+			} else {
+				callback(message);
+			}
+		});
 	});
 }
 //#endregion creaParseNodesInANewThread
