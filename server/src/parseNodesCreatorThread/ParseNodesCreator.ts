@@ -177,7 +177,7 @@ export function creaParseNodesInANewThread(mmParser: MmParser, callback: Progres
 				callback({kind: 'log', text: ('I am back to the Main thread!!!!!!!')} satisfies MessageLog);
 				addParseNodes(message.labelToParseNodeForThreadMap, mmParser.labelToStatementMap);
 				resolve();
-			mmParser.areAllParseNodesComplete = true;
+				mmParser.areAllParseNodesComplete = true;
 			} else {
 				callback(message);
 			}
