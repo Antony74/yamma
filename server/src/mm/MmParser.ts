@@ -17,7 +17,7 @@ import { GlobalState } from '../general/GlobalState';
 import { EHyp } from './EHyp';
 import { FHyp } from './FHyp';
 import * as events from 'events';
-import { creaParseNodesInANewThread, defaultProgressCallback, ProgressCallback } from '../parseNodesCreatorThread/ParseNodesCreator';
+import { createParseNodesInANewThread, defaultProgressCallback, ProgressCallback } from '../parseNodesCreatorThread/ParseNodesCreator';
 import { EventEmitter } from 'stream';
 import { IExtensionSettings } from './ConfigurationManager';
 import { TokenReader } from './TokenReader';
@@ -517,7 +517,7 @@ export class MmParser extends EventEmitter {
     public async createParseNodesForAssertionsAsync(progressCallback: ProgressCallback = defaultProgressCallback) {
         // if (this.isParsingComplete && !this.parseFailed)
         if (this.isParsingComplete)
-            await creaParseNodesInANewThread(this, progressCallback);
+            await createParseNodesInANewThread(this, progressCallback);
     }
 
     /** true iff the formula is a provable statement (typically, it starts with '|-' ) */

@@ -4,7 +4,7 @@ import { LabeledStatement } from '../mm/LabeledStatement';
 import { MmParser } from '../mm/MmParser';
 import { GrammarManagerForThread, IMmpRuleForThread } from '../parseNodesCreatorThread/GrammarManagerForThread';
 import { ParseNodeForThread } from '../parseNodesCreatorThread/ParseNodeForThread';
-import { addParseNodes, creaParseNodesInANewThread, createLabelToFormulaMap, createLabelToParseNodeForThreadMap, defaultProgressCallback, postDone, postLog, postProgress } from '../parseNodesCreatorThread/ParseNodesCreator';
+import { addParseNodes, createParseNodesInANewThread, createLabelToFormulaMap, createLabelToParseNodeForThreadMap, defaultProgressCallback, postDone, postLog, postProgress } from '../parseNodesCreatorThread/ParseNodesCreator';
 import { eqeq1iMmParser } from './GlobalForTest.test';
 import * as worker_threads from 'worker_threads';
 
@@ -113,7 +113,7 @@ describe("ParseNodesCreator.ts", () => {
 		});
 	});
 
-	describe("creaParseNodesInANewThread", () => {
+	describe("createParseNodesInANewThread", () => {
 		const origWorker = worker_threads.Worker;
 
 		afterEach(() => {
@@ -133,7 +133,7 @@ describe("ParseNodesCreator.ts", () => {
 				};
 			});
 
-			const promise = creaParseNodesInANewThread(eqeq1iMmParser, defaultProgressCallback);
+			const promise = createParseNodesInANewThread(eqeq1iMmParser, defaultProgressCallback);
 			const labelToParseNodeForThreadMap = new Map<string, ParseNodeForThread>();
 			onMessage({kind: 'done', labelToParseNodeForThreadMap});
 			await expect(promise).resolves.toBeUndefined();

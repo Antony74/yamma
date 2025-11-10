@@ -125,7 +125,7 @@ export function createLabelToParseNodeForThreadMap(labelToFormulaMap: Map<string
 
 //#endregion CHILD THREAD
 
-//#region creaParseNodesInANewThread
+//#region createParseNodesInANewThread
 // export for testing, only
 export function createLabelToFormulaMap(mmParser: MmParser): Map<string, string> {
 	const labelToStatementMap: Map<string, LabeledStatement> = mmParser.labelToStatementMap;
@@ -152,7 +152,7 @@ export function addParseNodes(labelToParseNodeForThreadMap: Map<string, ParseNod
 	});
 }
 
-export function creaParseNodesInANewThread(mmParser: MmParser, callback: ProgressCallback ): Promise<void> {
+export function createParseNodesInANewThread(mmParser: MmParser, callback: ProgressCallback ): Promise<void> {
 	// This code is executed in the main thread and not in the worker.
 	const labelToFormulaMap: Map<string, string> = createLabelToFormulaMap(mmParser);
 	const mmpRulesForThread: IMmpRuleForThread[] =
@@ -184,7 +184,7 @@ export function creaParseNodesInANewThread(mmParser: MmParser, callback: Progres
 		});
 	});
 }
-//#endregion creaParseNodesInANewThread
+//#endregion createParseNodesInANewThread
 
 
 // function createParseNodes(): any {
