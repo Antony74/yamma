@@ -4,7 +4,7 @@ import { LabeledStatement } from '../mm/LabeledStatement';
 import { MmParser } from '../mm/MmParser';
 import { GrammarManagerForThread, IMmpRuleForThread } from '../parseNodesCreatorThread/GrammarManagerForThread';
 import { ParseNodeForThread } from '../parseNodesCreatorThread/ParseNodeForThread';
-import { addParseNodes, createParseNodesInANewThread, createLabelToFormulaMap, createLabelToParseNodeForThreadMap, defaultProgressCallback, postDone, postLog, postProgress } from '../parseNodesCreatorThread/ParseNodesCreator';
+import { addParseNodes, createParseNodesInANewThread, createLabelToFormulaMap, createLabelToParseNodeForThreadMap, defaultProgressCallback } from '../parseNodesCreatorThread/ParseNodesCreator';
 import { eqeq1iMmParser } from './GlobalForTest.test';
 import * as worker_threads from 'worker_threads';
 
@@ -13,7 +13,11 @@ function buildParseNodesSimulated(mmParser: MmParser) {
 	const labelToFormulaMap: Map<string, string> = createLabelToFormulaMap(mmParser);
 	const mmpRulesForThread: IMmpRuleForThread[] =
 		GrammarManagerForThread.convertMmpRules(<MmpRule[]>mmParser.grammar.rules);
-	const labelToParseNodeForThreadMap: Map<string, ParseNodeForThread> = createLabelToParseNodeForThreadMap(labelToFormulaMap, mmpRulesForThread);
+	const labelToParseNodeForThreadMap: Map<string, ParseNodeForThread> = createLabelToParseNodeForThreadMap(
+		labelToFormulaMap,
+		mmpRulesForThread,
+	);
+
 	addParseNodes(labelToParseNodeForThreadMap, mmParser.labelToStatementMap);
 }
 
@@ -67,50 +71,6 @@ describe("ParseNodesCreator.ts", () => {
 
 		expect(progressMessages.length).toEqual(391);
 		expect(doneMessages).toEqual([]);
-	});
-
-	describe("postProgress", () => {
-		it("posts a progress message", () => {
-			const postMessage = jest.fn();
-			(worker_threads.parentPort as unknown) = {postMessage};
-			postProgress(7, 9);
-			expect(postMessage).toHaveBeenCalledWith({kind: 'progress', index: 7, count: 9});
-		});
-
-		it(`doesn't fail if there is no parentPort`, () => {
-			expect(worker_threads.parentPort).toBeNull();
-			postProgress(7, 9);
-		});
-	});
-
-	describe("postLog", () => {
-		it("posts a log message", () => {
-			const postMessage = jest.fn();
-			(worker_threads.parentPort as unknown) = {postMessage};
-			postLog('a log message');
-			expect(postMessage).toHaveBeenCalledWith({kind: 'log', text: 'a log message'});
-		});
-
-		it(`doesn't fail if there is no parentPort`, () => {
-			expect(worker_threads.parentPort).toBeNull();
-			postLog('a log message');
-		});
-	});
-
-	describe("postDone", () => {
-		const labelToParseNodeForThreadMap = new Map<string, ParseNodeForThread>();
-
-		it("posts a done message", () => {
-			const postMessage = jest.fn();
-			(worker_threads.parentPort as unknown) = {postMessage};
-			postDone(labelToParseNodeForThreadMap);
-			expect(postMessage).toHaveBeenCalledWith({kind: 'done', labelToParseNodeForThreadMap});
-		});
-
-		it(`doesn't fail if there is no parentPort`, () => {
-			expect(worker_threads.parentPort).toBeNull();
-			postDone(labelToParseNodeForThreadMap);
-		});
 	});
 
 	describe("createParseNodesInANewThread", () => {
