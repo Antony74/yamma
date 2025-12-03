@@ -45,7 +45,8 @@ export enum MmParserWarningCode {
 export enum MmParserEvents {
     newAxiomStatement = "newAxiomStatement",
     newProvableStatement = "newProvableStatement",
-    parsingProgress = 'newParsingProgress' 
+    parsingProgress = 'newParsingProgress', 
+    newLabel = 'newLabel',
 }
 
 export type AssertionParsedArgs = {
@@ -387,10 +388,12 @@ export class MmParser extends EventEmitter {
                     break;
                 }
                 default:
-                    if (tok.value.substring(0, 0) !== "$")
+                    if (tok.value.substring(0, 0) !== "$") {
                         label = tok;
-                    else
+                        this.emit(MmParserEvents.newLabel, tok);
+                    } else {
                         this.fail('"Unexpexcted token: " + tok');
+                    }
                     break;
             }
             tok = toks.Readc();
@@ -462,7 +465,7 @@ export class MmParser extends EventEmitter {
     //     this.isParsingComplete = true;
     // }
 
-    private parseFromTokenReader(tokenReader: TokenReader) {
+    parseFromTokenReader(tokenReader: TokenReader) {
 
         this.isParsingComplete = false;
         this.outermostBlock.mmParser = this;
