@@ -4,7 +4,17 @@ import { LabeledStatement } from '../mm/LabeledStatement';
 import { MmParser } from '../mm/MmParser';
 import { GrammarManagerForThread, IMmpRuleForThread } from '../parseNodesCreatorThread/GrammarManagerForThread';
 import { ParseNodeForThread } from '../parseNodesCreatorThread/ParseNodeForThread';
-import { addParseNodes, createParseNodesInANewThread, createLabelToFormulaMap, createLabelToParseNodeForThreadMap, defaultProgressCallback } from '../parseNodesCreatorThread/ParseNodesCreator';
+
+import {
+	addParseNodes,
+	createParseNodesInANewThread,
+	createLabelToFormulaMap,
+	createLabelToParseNodeForThreadMap,
+	defaultProgressCallback,
+	postMessage,
+	createMessageLog
+} from '../parseNodesCreatorThread/ParseNodesCreator';
+
 import { eqeq1iMmParser } from './GlobalForTest.test';
 import * as worker_threads from 'worker_threads';
 
@@ -32,8 +42,8 @@ describe("ParseNodesCreator.ts", () => {
 	});
 
 	test("Simulate working thread serialization, deserialization", () => {
-		const postMessage = jest.fn();
-		(worker_threads.parentPort as unknown) = {postMessage};
+		const postMessageMock = jest.fn();
+		(worker_threads.parentPort as unknown) = {postMessage: postMessageMock};
 
 		const mmParser: MmParser = eqeq1iMmParser;
 
@@ -53,7 +63,7 @@ describe("ParseNodesCreator.ts", () => {
 		const areEqual: boolean = GrammarManager.areParseNodesEqual(parseNode, parseNodeSimulated);
 		expect(areEqual).toBeTruthy();
 
-		const messages = postMessage.mock.calls.map(call => call[0]);
+		const messages = postMessageMock.mock.calls.map(call => call[0]);
 		const logMessages = messages.filter(message => message.kind === 'log');
 		const progressMessages = messages.filter(message => message.kind === 'progress');
 		const doneMessages = messages.filter(message => message.kind === 'done');
@@ -99,4 +109,22 @@ describe("ParseNodesCreator.ts", () => {
 			await expect(promise).resolves.toBeUndefined();
 		});
 	});
+
+
+	describe("postMessage", () => {
+
+		it("posts a log message", () => {
+			const postMessageMock = jest.fn();
+			(worker_threads.parentPort as unknown) = {postMessage: postMessageMock};
+			postMessage(createMessageLog('a log message'));
+			expect(postMessageMock).toHaveBeenCalledWith({kind: 'log', text: 'a log message'});
+		});
+
+		it(`doesn't fail if there is no parentPort`, () => {
+			expect(worker_threads.parentPort).toBeNull();
+			postMessage(createMessageLog('a log message'));
+		});
+
+
+	});	
 });

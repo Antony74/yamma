@@ -17,7 +17,7 @@ import { GlobalState } from '../general/GlobalState';
 import { EHyp } from './EHyp';
 import { FHyp } from './FHyp';
 import * as events from 'events';
-import { createParseNodesInANewThread, defaultProgressCallback, ProgressCallback } from '../parseNodesCreatorThread/ParseNodesCreator';
+import { createParseNodesInANewThread, createParseNodesInCurrentThread, defaultProgressCallback, ProgressCallback } from '../parseNodesCreatorThread/ParseNodesCreator';
 import { EventEmitter } from 'stream';
 import { IExtensionSettings } from './ConfigurationManager';
 import { TokenReader } from './TokenReader';
@@ -514,8 +514,10 @@ export class MmParser extends EventEmitter {
 
     //#region createParseNodesForAssertions
 
-    public async createParseNodesForAssertionsAsync(progressCallback: ProgressCallback = defaultProgressCallback) {
-        // if (this.isParsingComplete && !this.parseFailed)
+    public async createParseNodesForAssertionsAsync(
+        progressCallback: ProgressCallback = defaultProgressCallback
+    ): Promise<void> {
+
         if (this.isParsingComplete)
             await createParseNodesInANewThread(this, progressCallback);
     }
@@ -527,16 +529,13 @@ export class MmParser extends EventEmitter {
         return result;
     }
 
-    /** use this method only for testing small .mm files */
-    public createParseNodesForAssertionsSync() {
-        this.labelToStatementMap.forEach((labeledStatement: LabeledStatement) => {
-            // if (labeledStatement instanceof EHyp ||
-            //     labeledStatement instanceof AssertionStatement && !GrammarManager.isSyntaxAxiom2(labeledStatement)) {
-            if (MmParser.isParsable(labeledStatement)) {
-                // if the parseNode is undefined, it will create it
-                labeledStatement.parseNode;
-            }
-        });
-        this.areAllParseNodesComplete = true;
+    /** createParseNodesForAssertionsSync will lock up an interactive system while it runs, which
+     *  could be minutes for a large .mm file.  createParseNodesForAssertionsAsync is usually prefered. */
+    public createParseNodesForAssertionsSync(
+        progressCallback: ProgressCallback = defaultProgressCallback
+    ): void {
+        
+        if (this.isParsingComplete)
+            createParseNodesInCurrentThread(this, progressCallback);
     }
 }
