@@ -230,10 +230,24 @@ export class MmToMmpConverter {
 					i == mmProof.length - 1);
 		});
 	}
-	private addMmpStatements(provableStatement: ProvableStatement) {
+	private getMmpStatementsFromCompressedProof(provableStatement: ProvableStatement): Statement [] {
 		const proofCompressor: ProofCompressor = new ProofCompressor([]);
-		const mmProof: Statement[] = proofCompressor.DecompressProof(provableStatement,
-			this.labelToStatementMap);
+		return proofCompressor.DecompressProof(
+			provableStatement,
+			this.labelToStatementMap
+		);
+	}
+	private addMmpStatements(provableStatement: ProvableStatement) {
+		const isCompressedProof = provableStatement.Proof[0] && provableStatement.Proof[0] === '(';
+
+		const mmProof: Statement[] = isCompressedProof
+			? this.getMmpStatementsFromCompressedProof(provableStatement)
+			: Verifier.GetProofStatements(
+				provableStatement.Proof,
+				this.labelToStatementMap,
+				provableStatement.ParentBlock ?? this.outermostBlock
+			);
+
 		this.addMmpStatementsFromDecompressedProof(provableStatement, mmProof);
 	}
 	//#endregion addMmpStatements
