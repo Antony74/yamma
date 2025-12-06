@@ -327,7 +327,9 @@ export class MmParser extends EventEmitter {
             }
         }
     }
-    private buildLabelToStatementMap(toks: TokenReader, currentBlock?: BlockStatement) {
+
+    // public for testing, only
+    public buildLabelToStatementMap(toks: TokenReader, currentBlock?: BlockStatement) {
         //TODO prova a valutare di evitare d'usare BlockStack
         //const currentBlock = new BlockStatement(this.outermostBlock.last())
         //this.outermostBlock.push(currentBlock)

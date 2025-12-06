@@ -368,3 +368,27 @@ test('Test file inclusion', () => {
     expect(parser.diagnostics[0].code).toBe(MmParserWarningCode.unprovenStatement);
     expect(parser.diagnostics[0].mmFilePath).toContain(path.normalize('server/src/__test__/../mmTestFiles/included2.mm'));
 });
+
+test('buildLabelToStatementMap emits newLabel event when it finds a label', () => {
+    const mmParser = new MmParser();
+
+    mmParser.emit = jest.fn();
+
+    const mockTokenReader = {
+        indexForNextToken: 0,
+        tokens: {length: 1},
+        Readc: jest.fn().mockImplementation(() => {
+            if (mockTokenReader.indexForNextToken === 0) {
+                mockTokenReader.indexForNextToken = 6;
+                return {value: 'myLabel'};
+            } else {
+                return undefined;
+            }
+        }) as () => MmToken
+    } as TokenReader;
+
+    mmParser.buildLabelToStatementMap(mockTokenReader);
+
+    expect(mmParser.emit).toBeCalledTimes(1);
+    expect(mmParser.emit).toBeCalledWith('newLabel', {value: 'myLabel'});
+});
