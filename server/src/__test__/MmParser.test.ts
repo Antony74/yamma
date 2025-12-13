@@ -10,6 +10,7 @@ import { TokensCreator } from '../mm/TokensCreator';
 import { MmToken } from '../grammar/MmLexer';
 import { TokenReader } from '../mm/TokenReader';
 import * as path from 'path';
+import { BlockStatement } from '../mm/BlockStatement';
 
 test("Parsing two $f statements", () => {
     const parser: MmParser = new MmParser();
@@ -370,7 +371,13 @@ test('Test file inclusion', () => {
 });
 
 test('buildLabelToStatementMap emits newLabel event when it finds a label', () => {
-    const mmParser = new MmParser();
+    class TestParser extends MmParser {
+        buildLabelToStatementMap(toks: TokenReader, currentBlock?: BlockStatement): void {
+            super.buildLabelToStatementMap(toks, currentBlock);
+        }
+    }
+
+    const mmParser = new TestParser();
 
     mmParser.emit = jest.fn();
 
